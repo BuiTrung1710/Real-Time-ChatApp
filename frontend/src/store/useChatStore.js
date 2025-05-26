@@ -46,17 +46,20 @@ export const useChatStore = create((set, get) => ({
     }
   },
   deleteMessage: async (messageId) => {
-    set({ isMessagesLoading: true });
     const { messages } = get();
+    const updatedMessages = messages.map((message) =>
+      message._id === messageId
+        ? { ...message, isDeleted: true, text: "", images: [] }
+        : message
+    );
+
+    set({ messages: updatedMessages });
+
     try {
       await axiosInstance.delete(`/messages/delete/${messageId}`);
-      set({
-        messages: messages.filter((message) => message._id !== messageId),
-      });
     } catch (error) {
-      toast.error(error.response.data.message);
-    } finally {
-      set({ isMessagesLoading: false });
+      toast.error(error.response?.data?.message || "Lỗi khi thu hồi tin nhắn");
+      set({ messages });
     }
   },
 
@@ -69,38 +72,73 @@ export const useChatStore = create((set, get) => ({
 
     socket.off("newMessage");
     socket.off("deleteMessage");
+    socket.off("messageRevoked");
 
     socket.on("newMessage", (newMessage) => {
       const { selectedUser } = get();
       if (!selectedUser) return;
-      
+
       const isMessageSentFromSelectedUser =
         newMessage.senderId === selectedUser._id;
-      const isMessageSentToSelectedUser = 
+      const isMessageSentToSelectedUser =
         newMessage.receiverId === selectedUser._id;
-      
-      if (!isMessageSentFromSelectedUser && !isMessageSentToSelectedUser) return;
+
+      if (!isMessageSentFromSelectedUser && !isMessageSentToSelectedUser)
+        return;
 
       set({
         messages: [...get().messages, newMessage],
       });
     });
 
+    socket.on("messageRevoked", (data) => {
+      console.log("Received messageRevoked event:", data);
+      const { messageId } = data;
+      const { messages } = get();
+
+      const messageAlreadyRevoked = messages.some(
+        (msg) => msg._id === messageId && msg.isDeleted
+      );
+
+      if (!messageAlreadyRevoked) {
+        set({
+          messages: messages.map((message) =>
+            message._id === messageId
+              ? { ...message, isDeleted: true, text: "", images: [] }
+              : message
+          ),
+        });
+      }
+    });
+
     socket.on("deleteMessage", (messageId) => {
       console.log("Received deleteMessage event with ID:", messageId);
-      set({
-        messages: get().messages.filter((message) => message._id !== messageId),
-      });
+      const { messages } = get();
+
+      const messageAlreadyRevoked = messages.some(
+        (msg) => msg._id === messageId && msg.isDeleted
+      );
+
+      if (!messageAlreadyRevoked) {
+        set({
+          messages: messages.map((message) =>
+            message._id === messageId
+              ? { ...message, isDeleted: true, text: "", images: [] }
+              : message
+          ),
+        });
+      }
     });
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
     if (!socket) return;
-    
+
     console.log("Unsubscribing from message events");
     socket.off("newMessage");
     socket.off("deleteMessage");
+    socket.off("messageRevoked");
   },
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),
