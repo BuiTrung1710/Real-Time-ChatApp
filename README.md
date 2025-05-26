@@ -1,11 +1,16 @@
--#### Note:
-  . Tech stack: MERN(MongooseDB + ExpressJs + ReactJs + NodeJs) +Socket.io + TailwindCSS + Daisy UI
-  . Authentication && Authorization with JWT
-  . Real-time messaging with Socket.io
-  . Online user status
-  . Global state management with Zustand Store
+📌 Note
+Tech stack:
 
--#### Setup .env file:
+-	MERN (MongoDB + ExpressJS + ReactJS + NodeJS)
+-	Socket.io – Real-time messaging
+-	TailwindCSS + DaisyUI – UI styling
+-	JWT – Authentication & Authorization
+-	Zustand – Global state management
+-	Online user status support
+
+
+
+⚙️ Setup .env file:
 MONGODB_URI=...
 PORT=5001
 JWT_SECRET=...
@@ -16,7 +21,9 @@ CLOUDINARY_API_SECRET=...
 
 NODE_ENV=development
 
--####Build the app:
+
+🛠️ Build the app:
 npm run build
--#### Start the app:
+
+▶️ Start the app:
 npm run dev
