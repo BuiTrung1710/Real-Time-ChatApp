@@ -39,27 +39,48 @@ export const getMessages = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    //lấy text và image từ body
-    const { text, image } = req.body;
+    //lấy text và images từ body
+    const { text, images } = req.body;
     //lấy id của người nhận từ params của route (ví dụ: /api/messages/:id)
     const { id: receiverId } = req.params;
     //lấy id của người gửi từ req.user (đã được xác thực trước đó) (middleware auth)
     const senderId = req.user._id;
 
-    let imageUrl;
-    if (image) {
-      // Nếu có ảnh dạng base64, upload lên Cloudinary
-      const uploadResponse = await cloudinary.uploader.upload(image);
-      // Lấy URL của ảnh đã upload thành công
-      imageUrl = uploadResponse.secure_url;
+    let imageUrls = [];
+    
+    // Xử lý upload ảnh - giờ chỉ xử lý 1 ảnh mỗi lần
+    if (images && Array.isArray(images) && images.length > 0) {
+      try {
+        // Chỉ lấy ảnh đầu tiên trong mảng (vì frontend đã tách từng ảnh để gửi)
+        const imageToUpload = images[0];
+        
+        // Upload ảnh lên Cloudinary
+        const uploadResponse = await cloudinary.uploader.upload(imageToUpload, {
+          folder: "chat_images",
+          resource_type: "image",
+          timeout: 30000, // Tăng timeout lên 30s
+          quality: "auto", // Tự động tối ưu chất lượng
+          fetch_format: "auto", // Tự động chọn định dạng tốt nhất
+          transformation: [
+            { width: 1200, height: 1200, crop: "limit" }, // Giới hạn kích thước tối đa
+            { quality: "auto:good" } // Tự động chọn chất lượng tốt
+          ]
+        });
+        
+        // Lấy URL của ảnh đã upload
+        imageUrls.push(uploadResponse.secure_url);
+      } catch (uploadError) {
+        console.error("Error uploading image:", uploadError);
+        return res.status(500).json({ error: "Lỗi khi upload ảnh" });
+      }
     }
 
-    //Tạo một đối tượng Message mới với thông tin người gửi, người nhận, nội dung tin nhắn và ảnh (nếu có)
+    //Tạo một đối tượng Message mới với thông tin người gửi, người nhận, nội dung tin nhắn và ảnh
     const newMessage = new Message({
       senderId,
       receiverId,
       text,
-      image: imageUrl,
+      images: imageUrls,
     });
 
     //Lưu tin nhắn vào cơ sở dữ liệu
@@ -83,34 +104,47 @@ export const deleteMessage = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
-    // Tìm tin nhắn theo id
-    const message = await Message.findById(id);
-    if (!message) return res.status(404).json({ error: "Message not found" }); // Nếu không tìm thấy tin nhắn, trả về lỗi 404
+    
+    // Tìm và cập nhật tin nhắn trong một bước để tránh race condition
+    const message = await Message.findOneAndUpdate(
+      { 
+        _id: id, 
+        senderId: userId // Đảm bảo chỉ người gửi mới có thể thu hồi
+      },
+      { 
+        $set: { 
+          isDeleted: true,
+          text: "",
+          images: []
+        } 
+      },
+      { new: true } // Trả về document đã được cập nhật
+    );
 
-    // Kiểm tra quyền: chỉ cho phép người gửi xóa tin nhắn của mình
-    if (message.senderId.toString() !== userId.toString())
-      return res.status(403).json({ error: "Not allowed" }); // Nếu không phải người gửi, trả về lỗi 403
+    // Kiểm tra xem tin nhắn có tồn tại và người dùng có quyền không
+    if (!message) {
+      return res.status(404).json({ 
+        error: "Không tìm thấy tin nhắn hoặc bạn không có quyền thu hồi" 
+      });
+    }
 
-    // Lưu trữ thông tin cần thiết trước khi xóa tin nhắn
-    const senderId = message.senderId.toString();
-    const receiverId = message.receiverId.toString();
-    const messageId = message._id.toString();
-
-    // Xóa tin nhắn khỏi database
-    await message.deleteOne();
-
+    // Thông báo cho tất cả client về việc tin nhắn đã bị thu hồi
     try {
-      // Thay vì gửi đến socket cụ thể, gửi broadcast đến tất cả clients
-      io.emit("deleteMessage", messageId);
+      io.emit("messageRevoked", {
+        messageId: message._id.toString(),
+        senderId: message.senderId.toString(),
+        receiverId: message.receiverId.toString(),
+        timestamp: new Date().toISOString()
+      });
     } catch (socketError) {
       console.error("Socket emit error:", socketError);
     }
 
     // Trả về thông báo thành công
-    res.status(200).json({ message: "Message deleted" });
+    res.status(200).json({ message: "Tin nhắn đã được thu hồi" });
   } catch (error) {
     // Nếu có lỗi, trả về lỗi 500
     console.error("Error in deleteMessage:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Lỗi hệ thống khi thu hồi tin nhắn" });
   }
 };
