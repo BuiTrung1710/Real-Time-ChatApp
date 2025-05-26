@@ -4,7 +4,11 @@ import { Send } from "lucide-react";
 
 const PREVIEW_MESSAGES = [
   { id: 1, content: "Hey! How's it going?", isSent: false },
-  { id: 2, content: "I'm doing great! Just working on some new features.", isSent: true },
+  {
+    id: 2,
+    content: "I'm doing great! Just working on some new features.",
+    isSent: true,
+  },
 ];
 
 const SettingsPage = () => {
@@ -15,10 +19,15 @@ const SettingsPage = () => {
       <div className="space-y-6">
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold">Theme</h2>
-          <p className="text-sm text-base-content/70">Choose a theme for your chat interface</p>
+          <p className="text-sm text-base-content/70">
+            Choose a theme for your chat interface
+          </p>
         </div>
 
+        {/* Giao diện chọn chủ đề */}
         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+          {/* theme === t để kiểm tra xem chủ đề hiện tại có trùng với chủ đề của nút bấm t hay không? */}
+          {/* Nếu trùng thì làm nổi bật nút bấm đấy lên. Còn không thì sẽ có hiệu ứng hover */}
           {THEMES.map((t) => (
             <button
               key={t}
@@ -28,7 +37,10 @@ const SettingsPage = () => {
               `}
               onClick={() => setTheme(t)}
             >
-              <div className="relative h-8 w-full rounded-md overflow-hidden" data-theme={t}>
+              <div
+                className="relative h-8 w-full rounded-md overflow-hidden"
+                data-theme={t}
+              >
                 <div className="absolute inset-0 grid grid-cols-4 gap-px p-1">
                   <div className="rounded bg-primary"></div>
                   <div className="rounded bg-secondary"></div>
@@ -36,6 +48,8 @@ const SettingsPage = () => {
                   <div className="rounded bg-neutral"></div>
                 </div>
               </div>
+              {/* hiển thị tên chủ đề với ký tự đầu viết hoa */}
+              {/* truncate: nếu nội dung quá dài sẽ bị cắt ngắn và hiển thị dấu ... */}
               <span className="text-[11px] font-medium truncate w-full text-center">
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </span>
@@ -43,7 +57,7 @@ const SettingsPage = () => {
           ))}
         </div>
 
-        {/* Preview Section */}
+        {/* Phần xem trước giao diện sau khi chọn chủ đề */}
         <h3 className="text-lg font-semibold mb-3">Preview</h3>
         <div className="rounded-xl border border-base-300 overflow-hidden bg-base-100 shadow-lg">
           <div className="p-4 bg-base-200">
@@ -68,19 +82,29 @@ const SettingsPage = () => {
                   {PREVIEW_MESSAGES.map((message) => (
                     <div
                       key={message.id}
-                      className={`flex ${message.isSent ? "justify-end" : "justify-start"}`}
+                      className={`flex ${
+                        message.isSent ? "justify-end" : "justify-start"
+                      }`}
                     >
                       <div
                         className={`
                           max-w-[80%] rounded-xl p-3 shadow-sm
-                          ${message.isSent ? "bg-primary text-primary-content" : "bg-base-200"}
+                          ${
+                            message.isSent
+                              ? "bg-primary text-primary-content"
+                              : "bg-base-200"
+                          }
                         `}
                       >
                         <p className="text-sm">{message.content}</p>
                         <p
                           className={`
                             text-[10px] mt-1.5
-                            ${message.isSent ? "text-primary-content/70" : "text-base-content/70"}
+                            ${
+                              message.isSent
+                                ? "text-primary-content/70"
+                                : "text-base-content/70"
+                            }
                           `}
                         >
                           12:00 PM

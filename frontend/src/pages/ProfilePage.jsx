@@ -10,10 +10,14 @@ const ProfilePage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    //FileReader là một API của JS để đọc nội dung của tệp (file) dưới dạng chuỗi hoặc dữ liệu nhị phân
+    //Đoạn mã này sẽ đọc tệp hình ảnh và chuyển đổi nó thành chuỗi base64
     const reader = new FileReader();
 
     reader.readAsDataURL(file);
 
+    //Khi tệp đã được đọc xong, hàm onload sẽ được gọi và kết quả sẽ là một chuỗi base64
+    //Sau đó, chúng ta sẽ gọi hàm updateProfile để cập nhật ảnh đại diện của người dùng
     reader.onload = async () => {
       const base64Image = reader.result;
       setSelectedImg(base64Image);
@@ -42,11 +46,13 @@ const ProfilePage = () => {
               <label
                 htmlFor="avatar-upload"
                 className={`
-                  absolute bottom-0 right-0 
+                  absolute bottom-0 right-0
                   bg-base-content hover:scale-105
-                  p-2 rounded-full cursor-pointer 
+                  p-2 rounded-full cursor-pointer
                   transition-all duration-200
-                  ${isUpdatingProfile ? "animate-pulse pointer-events-none" : ""}
+                  ${
+                    isUpdatingProfile ? "animate-pulse pointer-events-none" : ""
+                  }
                 `}
               >
                 <Camera className="w-5 h-5 text-base-200" />
@@ -61,7 +67,9 @@ const ProfilePage = () => {
               </label>
             </div>
             <p className="text-sm text-zinc-400">
-              {isUpdatingProfile ? "Uploading..." : "Click the camera icon to update your photo"}
+              {isUpdatingProfile
+                ? "Uploading..."
+                : "Click the camera icon to update your photo"}
             </p>
           </div>
 
@@ -71,7 +79,9 @@ const ProfilePage = () => {
                 <User className="w-4 h-4" />
                 Full Name
               </div>
-              <p className="px-4 py-2.5 bg-base-200 rounded-lg border">{authUser?.fullName}</p>
+              <p className="px-4 py-2.5 bg-base-200 rounded-lg border">
+                {authUser?.fullName}
+              </p>
             </div>
 
             <div className="space-y-1.5">
@@ -79,7 +89,9 @@ const ProfilePage = () => {
                 <Mail className="w-4 h-4" />
                 Email Address
               </div>
-              <p className="px-4 py-2.5 bg-base-200 rounded-lg border">{authUser?.email}</p>
+              <p className="px-4 py-2.5 bg-base-200 rounded-lg border">
+                {authUser?.email}
+              </p>
             </div>
           </div>
 
